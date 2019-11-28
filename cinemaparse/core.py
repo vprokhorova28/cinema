@@ -23,37 +23,53 @@ class CinemaParser():
     def get_films_list(self):
         if not self.content:
             self.extract_raw_content()
-        x = []
+        x, films = [], []
         div_tags = self.soup.find_all('div', {'class': 'movie-plate-row'})
         for i in div_tags[::2]:
             x.append(i.find_all('a', {'class': 'underdashed'}))
         for i in x:
-            print(i[0].text)
+            films.append(i[0].text)
+            return films
 
     def get_film_nearest_session(self, name):
         if not self.content:
             self.extract_raw_content()
-        x = []
+        x, date = [], []
         div_tags = self.soup.find_all('div', {'class': 'movie-plate-row'})
         for i in div_tags[::2]:
             x.append(i.find_all('a', {'class': 'underdashed'}))
-        for i in x:
-            if i[0].text == name:
-                url = self.url + i[0]['href']
+        for i in div_tags[1::2]:
+            for j in (i.find_all('div', {'class', 'movie-next-screening-mobile'})):
+                for k in (j.find_all('span', {'class': 'label label-bg label-default normal-font'})):
+                    date.append(k.text)
+        f = zip(x, date)
+        for i in f:
+            if i[0][0].text == name:
+                if 'сегодня' in i[1]:
+                    url = self.url + i[0][0]['href']
+                else:
+                    return (None, None)
         content1 = requests.get(url)
         content1 = content1.text
         content1 = BeautifulSoup(content1, 'html.parser')
         minn = 100000000000000000
+        y = []
         new_div_tags = content1.find_all('table', {'class': 'table table-bordered table-condensed table-curved table-striped table-no-inside-borders'})
-        for i in new_div_tags:
-             y = i.find_all('td', {'class': 'text-center cell-screenings'})
-             z = i.find_all('a', {'class': 'underdashed'})
-             t = i.find_all('a', {'class': 'btn btn-default navbar-btn price-button cell-screening-desktop'})
-        for i, j in y, z:
-            '''a = i['attr-time']'''
-            print(i)
-            '''if int(a) < minn:
-                minn = int(a)
-                name = j.text
-                time = i.text
-        return (name, time)'''
+        name_part = new_div_tags[0].find_all('td', {'class': 'col-sm-4 col-xs-11'})
+        time_part = new_div_tags[0].find_all('td', {'class': 'col-sm-8 col-xs-1'})
+        times = []
+        names = []
+        for i in time_part:
+            times.append(i.find_all('td', {'class': 'text-center cell-screenings'}))
+        for i in name_part:
+           names.append(i.find_all('div', {'class': 'cinema-name'}))
+        inf = zip(times, names)
+        for i in names:
+            y.append(i[0].text)
+        inf = zip(times, y)
+        for i in inf:
+            if int(i[0][0]['attr-time']) < minn:
+                minn = int(i[0][0]['attr-time'])
+                time = i[0][0].text[:5]
+                name = i[1]
+        return (name, time)
