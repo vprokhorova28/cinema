@@ -73,3 +73,8 @@ class CinemaParser():
                 time = i[0][0].text[:5]
                 name = i[1]
         return (name, time)
+
+
+if __name__ == '__main__':
+    msk_parser = CinemaParser()
+    print(msk_parser.get_film_nearest_session('Портрет девушки в огне'))
